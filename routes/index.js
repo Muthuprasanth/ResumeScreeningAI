@@ -22,16 +22,52 @@ var sendgridCredentials = [];
 //Muthuprasanth1012
 
 /* GET home page. */
+
+router.get('/callback', function(req, res, next) {
+
+});
+
+function getLinkedInDetails(){
+
+  var luisserverurl = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=81yooy0fgqgwnd&"+
+    "redirect_uri=http://localhost:3000/callback&state=cuDmW9pn0HM3dwCNsls90dsdh3dghs";
+  var options4 = {
+    method: 'get',
+    url:luisserverurl,
+  }
+
+  return new Promise(function (resolve, reject) {
+    request(options4, function (err, result, body) {
+      if(err)
+      {
+        console.log("error ",err);
+        reject(err);
+
+      }
+     //let resultfromluis = JSON.parse(body);
+      console.log("linkedin profile ",body);
+      resolve(body);
+    });
+  });
+
+}
+
 router.get('/tasks', function(req, res, next) {
   console.log("ResumeScreening AI")
-  let promiseTOGetsendgridCredentials = getSendgrid(res);
+  let promiseTOGetsendgridCredentials = getLinkedInDetails();
   promiseTOGetsendgridCredentials.then(function (Credentials) {
-    sendgridCredentials[0] = Credentials[0];
-    sendgridCredentials[1] = Credentials[1];
-    res = Credentials[2];
-    //console.log("sendgridCredentials is", sendgridCredentials);
-    sendMail(["mprasanth113@gmail.com"],res);
+    //console.log(" Getting getLinkedInDetails is", Credentials);
+  }).catch(function (error) {
+    console.log("Error in Getting getLinkedInDetails is", error);
   });
+  //let promiseTOGetsendgridCredentials = getSendgrid(res);
+  // promiseTOGetsendgridCredentials.then(function (Credentials) {
+  //   sendgridCredentials[0] = Credentials[0];
+  //   sendgridCredentials[1] = Credentials[1];
+  //   res = Credentials[2];
+  //   //console.log("sendgridCredentials is", sendgridCredentials);
+  //   //sendMail(["mprasanth113@gmail.com"],res);
+  // });
 });
 
 function getSendgrid(res) {
