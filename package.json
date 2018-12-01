@@ -6,11 +6,23 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "@sendgrid/mail": "^6.3.1",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
+    "dotenv": "^6.0.0",
     "express": "~4.16.0",
+    "fs": "0.0.1-security",
     "http-errors": "~1.6.2",
-    "jade": "~1.11.0",
-    "morgan": "~1.9.0"
+    "https": "^1.0.0",
+    "jade": "^1.11.0",
+    "juice": "^5.0.0",
+    "morgan": "~1.9.0",
+    "path": "^0.12.7",
+    "pug": "2.0.0-beta11",
+    "request": "^2.88.0",
+    "sppull": "^2.2.7",
+    "tedious": "^2.6.4",
+    "textract": "^2.4.0",
+    "url": "^0.11.0"
   }
 }
