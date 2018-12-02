@@ -93,6 +93,9 @@ router.get('/tasks', function(req, res, next) {
             res = JDphrases[2];
             JDphrase = updatingphrases(JDphrases[0], 1);
             console.log("Updated resumephrase is", JDphrase);
+
+            let promiseToGetJDintent  =  helper2(JDphrase,resumephrase,phrasecount,resumedetail,res);
+
           }).catch(function (error) {
             console.log("Error in Getting JD Keyphrases is", error.message);
           });
@@ -155,6 +158,73 @@ function getSendgrid(res) {
   });
 }
 
+function resolveAfter3Seconds() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      console.log("before");
+      resolve('resolved');
+      console.log("after");
+    }, 3000);
+  });
+}
+
+function resolveAfter1Seconds() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      console.log("1-before");
+      resolve('resolved');
+      console.log("1-after");
+    }, 1000);
+  });
+}
+
+async function helper2(JDphrase,resumephrase,phrasecount,resumedetail,res)
+{
+  console.log("Inside helper2");
+let resumecontent="";
+
+ let JDintentarray=[],resumeintentarray=[]; 
+  for(let a=0;a<phrasecount;a++)
+  {
+    
+      JDintentarray[a] = await getIntents(JDphrase[a]);
+      console.log("JD");
+      if((a+1)%5==0)
+      {
+        await resolveAfter3Seconds();
+      }
+      await resolveAfter1Seconds();
+  
+    
+  }
+  console.log("after FIRST for loop",JDintentarray);
+  resumecontent = resumedetail;
+  let response = res;
+  for(let b=0;b<phrasecount;b++)
+  {
+  
+    resumeintentarray[b] =  await getIntents(resumephrase[b]);
+      console.log("REsume");
+      if((b+1)%5==0)
+      {
+        await resolveAfter3Seconds();
+      }
+      await resolveAfter1Seconds();
+   
+  }
+  console.log("after SECOND for loop",resumeintentarray);
+  let total = phraseCompariosion(JDintentarray,resumeintentarray);
+  if(total >= 5)
+  {
+    let email = getEmailsFromString(resumecontent);
+    console.log("email",email,typeof email);
+    sendMail(email,response);
+  }
+  else{
+    console.log("Candidate score is "+total+" and rejected");
+    response.json({ message: 'You are rejected' });
+  }
+}
 
 function sendMail(emails,response)
 {
@@ -204,6 +274,72 @@ function sendMail(emails,response)
       response.json({ message: 'Selected and Mail sended' });
     }
   });
+}
+
+function phraseCompariosion(JDintentarray,resumeintentarray)
+{
+  var JDintentsuniquecounts = {};
+  var resumeintentsuniquecounts = {};
+  JDintentarray.forEach(function(x) { JDintentsuniquecounts[x] = (JDintentsuniquecounts[x] || 0)+1; });
+  resumeintentarray.forEach(function(x) { resumeintentsuniquecounts[x] = (resumeintentsuniquecounts[x] || 0)+1; });
+  let total=0;
+  for (key in JDintentsuniquecounts) {
+    if (JDintentsuniquecounts.hasOwnProperty(key)) 
+    {
+      if(resumeintentsuniquecounts.hasOwnProperty(key))
+      {
+        if(resumeintentsuniquecounts[key] <= JDintentsuniquecounts[key])
+        {
+          console.log("key "+key+" JDintentsuniquecounts "+JDintentsuniquecounts[key]+" resumeintentsuniquecounts "+resumeintentsuniquecounts[key]);
+          console.log("value "+(resumeintentsuniquecounts[key]/JDintentsuniquecounts[key])*JDintentsuniquecounts[key]);
+         // total +=(resumeintentsuniquecounts[key]/JDintentsuniquecounts[key])*JDintentsuniquecounts[key];
+         total += resumeintentsuniquecounts[key];
+          console.log("subtotal is",total);
+        }
+        else{
+          console.log("key "+key+" resumeintentsuniquecounts "+resumeintentsuniquecounts[key]+" is greater than  JDintentsuniquecounts "+JDintentsuniquecounts[key]);
+           total += JDintentsuniquecounts[key];
+           console.log("subtotal is",total);
+        }
+      }
+      else{
+        //total += 0;
+        console.log("key not found "+key);
+        console.log("subtotal is",total);
+      }
+    }
+  }
+console.log("total is",total);
+return total;
+}
+
+function getIntents(resumekeyphrase) {
+  console.log("Inside getIntents");
+   var luisserverurl = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/95eec808-1452-461b-b7d4-4a7a35ffaae1?subscription-key=c020b67f43b44573bb611d9ed30e2bd0&timezoneOffset=-360&q="+resumekeyphrase;
+   //var luisserverurl = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/af03578f-3913-4308-9cb4-535a5407b681?subscription-key=46da208aabf64fa4a0e531803b8f5bec&timezoneOffset=-360&q="+resumekeyphrase;
+  var options4 = {
+    method: 'get',
+    url:luisserverurl,
+  }
+
+  return new Promise(function (resolve, reject) {
+    request(options4, function (err, result, body) {
+      let resultfromluis = JSON.parse(body);
+      if (!("query" in resultfromluis)) {
+        console.log("Inside reject");
+        console.log("error is ", err);
+        console.log("-----------------------------------------------------------------");
+        reject(resumekeyphrase);
+      }
+      else {
+        let body_ = JSON.parse(body);
+        console.log("Inside resolve", body_);
+        console.log("-----------------------------------------------------------------");
+        let luisintent = body_.topScoringIntent.intent;
+        resolve(luisintent);
+      }
+    });
+  });      
 }
 
 function updatingphrases(phrase, flag) {
