@@ -83,8 +83,8 @@ router.get('/tasks', function(req, res, next) {
         promiseToGetResumekeyphrases.then(function (resumephrases) {
           resumedetail = resumephrases[1];
           res = resumephrases[2];
-          console.log("response_2",res);
-          console.log("resumephrase is", resumephrases[1]);
+          //console.log("response_2",res);
+          //console.log("resumephrase is", resumephrases[1]);
           resumephrase = updatingphrases(resumephrases[0], 0);
           console.log("Updated resumephrase is", resumephrase);
           let promiseToGetJDkeyphrases = textanalyics(JDdetail,resumedetail,res);
