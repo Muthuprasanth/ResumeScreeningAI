@@ -12,7 +12,7 @@ var url = require('url');
 var juice = require('juice');
 const sgMail = require('@sendgrid/mail');
 
-//var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'http://localhost:3000/callback');
+var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'http://localhost:3000/callback');
 
 var express = require('express');
 var router = express.Router();
@@ -31,7 +31,7 @@ router.get('/callback', function(req, res, next) {
 
 });
 
-function getLinkedInDetails(req, res){
+function getLinkedInDetails(){
 
   var luisserverurl = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=81yooy0fgqgwnd&redirect_uri=http://localhost:3000/callback&state=2522abcde12345";
   var options4 = {
@@ -65,7 +65,8 @@ router.get('/tasks', function(req, res, next) {
   var jdfilename = "Jdazure.docx";
   var resumedetail = "", JDdetail = "";
   console.log("inside main function phrasecount is ", phrasecount);
-  let promiseTOGetsendgridCredentials = getSendgrid(res);
+  getLinkedInDetails();
+  /* let promiseTOGetsendgridCredentials = getSendgrid(res);
   promiseTOGetsendgridCredentials.then(function (Credentials) {
     sendgridCredentials[0] = Credentials[0];
     sendgridCredentials[1] = Credentials[1];
@@ -110,7 +111,7 @@ router.get('/tasks', function(req, res, next) {
     });
   }).catch(function (error) {
     console.log("Error in Getting sendgridCredentials is", error.message);
-  });
+  });*/
 });
 
 function getSendgrid(res) {
