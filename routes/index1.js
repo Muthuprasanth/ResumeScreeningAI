@@ -25,6 +25,7 @@ var sendgridCredentials = [];
 
 /* GET home page. */
 
+
 router.get('/callback', function(req, res, next) {
 
   console.log("code ",req.query.code);

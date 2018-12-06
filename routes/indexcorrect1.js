@@ -12,7 +12,7 @@ var url = require('url');
 var juice = require('juice');
 const sgMail = require('@sendgrid/mail');
 
-//var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'http://localhost:3000/callback');
+var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'http://localhost:3000/callback');
 
 var express = require('express');
 var router = express.Router();
@@ -25,13 +25,38 @@ var sendgridCredentials = [];
 
 /* GET home page. */
 
-router.get('/callback', function(req, res, next) {
+router.get('/linkedin1', function(req, res) {
+  var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+  Linkedin.auth.authorize(res, scope);
+});
+  
+router.get('/callback', function(req, res) {
+  Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
+    if ( err )
+      return console.error(err);
+      var linkedin = Linkedin.init(results.access_token || results.accessToken);
+      var summary = "";
+      linkedin.people.url("https://www.linkedin.com/in/mchawda",['summary', 'positions'],function(err, profileDetails) {
+        console.log("Summary of the LinkedIn Profile is ",profileDetails.summary)
+        console.log("Specialties of the LinkedIn Profile is ",profileDetails.specialties)
+        console.log("Positions of the LinkedIn Profile is ",profileDetails.positions)
+        summary = profileDetails.summary;
 
-  console.log("code ",req.query.code);
-
+        let promiseToGetlinkedinkeyphrases = textanalyics(summary,summary,res);
+        promiseToGetlinkedinkeyphrases.then(function (linkedinphrases) {
+          linkedindetail = linkedinphrases[1];
+          res = linkedinphrases[2];
+          //console.log("response_2",res);
+          //console.log("linkedinphrase is", linkedinphrases[1]);
+          linkedinphrase = updatingphrases(linkedinphrases[0], 0);
+          console.log("Updated linkedinphrase is", linkedinphrase);
+          res.json({ message: 'success'});
+        });
+      });
+    }); 
 });
 
-function getLinkedInDetails(req, res){
+function getLinkedInDetails(){
 
   var luisserverurl = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=81yooy0fgqgwnd&redirect_uri=http://localhost:3000/callback&state=2522abcde12345";
   var options4 = {
@@ -53,7 +78,6 @@ function getLinkedInDetails(req, res){
     });
   //});
  
-
 }
 
 router.get('/tasks', function(req, res, next) {
@@ -65,6 +89,7 @@ router.get('/tasks', function(req, res, next) {
   var jdfilename = "Jdazure.docx";
   var resumedetail = "", JDdetail = "";
   console.log("inside main function phrasecount is ", phrasecount);
+  //getLinkedInDetails();
   let promiseTOGetsendgridCredentials = getSendgrid(res);
   promiseTOGetsendgridCredentials.then(function (Credentials) {
     sendgridCredentials[0] = Credentials[0];
@@ -216,8 +241,9 @@ let resumecontent="";
   let total = phraseCompariosion(JDintentarray,resumeintentarray);
   if(total >= 5)
   {
-    let email = getEmailsFromString(resumecontent);
-    console.log("email",email,typeof email);
+    let email = getEmailsFromString(resumecontent,/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+    let linkedin_id = getEmailsFromString(resumecontent,/https:\/\/www.linkedin.com\/[\w\d\/]+/gi);
+    console.log("email",email,typeof email," linkedin_id ",linkedin_id);
     sendMail(email,response);
   }
   else{
@@ -562,8 +588,9 @@ function getFile(filename, foldername, localfolder) {
     // });
   });
 }
-function getEmailsFromString(text) {
-  return text.match(/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+function getEmailsFromString(text,pattern) {
+  return text.match(pattern);
+  //return text.match(/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
 }
 
 module.exports = router;
