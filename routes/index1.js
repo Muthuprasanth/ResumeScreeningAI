@@ -24,74 +24,186 @@ var sendgridCredentials = [];
 //Muthuprasanth1012
 
 /* GET home page. */
-
-
-router.get('/callback', function(req, res, next) {
-
-  console.log("code ",req.query.code);
-  Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
-    if ( err )
-    return console.error("error is ",err);
-
-    /**
-     * Results have something like:
-     * {"expires_in":5184000,"access_token":". . . ."}
-     */
-
-    console.log("profile details ",results);
-    //return res.redirect('http://localhost:3000/tasks');
-  });
+router.get('/ww',function(req, res, next){
+ // console.log(req);
+  if(!req.query.summary){
+    console.log("if found");
+    var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+    Linkedin.auth.authorize(res, scope);
+  }
+  else{
+    console.log("summary is ",req.query.summary)
+    res.json({ message: 'success'});
+  }
 });
 
-function getLinkedInDetails(req, res){
+// router.get('/linkedin1', function(req, res) {
+//   var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+//   Linkedin.auth.authorize(res, scope);
+// });
+  
+router.get('/callback', function(req, res) {
+ // console.log(" res.resumedetail ",req);
+Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
+  if ( err )
+    return console.error(err);
+    var linkedin = Linkedin.init(results.access_token || results.accessToken);
+    var resumecontent = sendgridCredentials[2];
+     console.log(" resumecontent ",typeof resumecontent, resumecontent)
+      var resumesummary = "";
+      let linkedin_id = getPatternValue(resumecontent, /https:\/\/www.linkedin.com\/[\w\d\/]+/gi);
+      linkedin.people.url(linkedin_id,['summary', 'positions'],function(err, profileDetails) {
+      // console.log("Summary of the LinkedIn Profile is ",profileDetails.summary)
+      // console.log("Specialties of the LinkedIn Profile is ",profileDetails.specialties)
+      //console.log("Positions of the LinkedIn Profile is ",profileDetails.positions)
+      resumesummary = resumecontent+profileDetails.summary.trim();
+      console.log(" resumesummary is ",resumesummary);
+      textsort(resumesummary, res);
+      // res.redirect('/tasks?summary='+summary);
+      // let promiseToGetlinkedinkeyphrases = textanalyics(summary,summary,res);
+      // promiseToGetlinkedinkeyphrases.then(function (linkedinphrases) {
+      //   linkedindetail = linkedinphrases[1];
+      //   res = linkedinphrases[2];
+      //   //console.log("response_2",res);
+      //   //console.log("linkedinphrase is", linkedinphrases[1]);
+      //   linkedinphrase = updatingphrases(linkedinphrases[0], 0);
+      //   console.log("Updated linkedinphrase is", linkedinphrase);
+      //  res.json({ message: 'success'});
+      // });
+    });
+  }); 
+});
+function getLinkedInDetails(){
 
-  // var luisserverurl = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=81yooy0fgqgwnd&"+
-  //   "redirect_uri=http://localhost:3000/callback&state=cuDmW9pn0HM3dwCNsls90dsdh3dghs";
-  // var options4 = {
-  //   method: 'get',
-  //   url:luisserverurl,
-  // }
+  var luisserverurl = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=81yooy0fgqgwnd&redirect_uri=http://localhost:3000/callback&state=2522abcde12345";
+  var options4 = {
+    method: 'get',
+    url:luisserverurl,
+  }
 
-  // return new Promise(function (resolve, reject) {
-  //   request(options4, function (err, result, body) {
-  //     if(err)
-  //     {
-  //       console.log("error ",err);
-  //       reject(err);
+  //return new Promise(function (resolve, reject) {
+    request(options4, function (err, result, body) {
+      if(err)
+      {
+        console.log("error ",err);
+        //reject(err);
 
-  //     }
-  //    //let resultfromluis = JSON.parse(body);
-  //     console.log("linkedin profile ",body);
-  //     resolve(body);
-  //   });
-  // });
-  console.log(" Getting getLinkedInDetails is");
-  var scope = ['r_basicprofile', 'r_fullprofile', 'r_emailaddress', 'r_network', 'r_contactinfo', 'rw_nus', 'rw_groups', 'w_messages'];
-  //Linkedin.setCallback(req.protocol + '://' + req.headers.host + '/callback');
-  Linkedin.auth.authorize(res, scope);
-
+      }
+     //let resultfromluis = JSON.parse(body);
+      console.log("linkedin profile ",body);
+     // resolve(body);
+    });
+  //});
+ 
 }
 
 router.get('/tasks', function(req, res, next) {
   console.log("ResumeScreening AI")
-  
-  let promiseTOGetsendgridCredentials = getLinkedInDetails(req, res);
-  //promiseTOGetsendgridCredentials.then(function (Credentials) {
-    //console.log(" Getting getLinkedInDetails is", Credentials);
-  //}).catch(function (error) {
-    //console.log("Error in Getting getLinkedInDetails is");
-  //});
-  //let promiseTOGetsendgridCredentials = getSendgrid(res);
-  // promiseTOGetsendgridCredentials.then(function (Credentials) {
-  //   sendgridCredentials[0] = Credentials[0];
-  //   sendgridCredentials[1] = Credentials[1];
-  //   res = Credentials[2];
-  //   //console.log("sendgridCredentials is", sendgridCredentials);
-  //   //sendMail(["mprasanth113@gmail.com"],res);
-  // });
+ 
+  //if(!req.query.summary){
+    //var filename = req.query.filename;
+    var filename = "mahesh_1.docx";
+    //var filename = "ramprasad_1.docx";
+    var resumedetail = "", JDdetail = "";
+    console.log("inside main function phrasecount is ", phrasecount);
+    let promiseTOGetsendgridCredentials = getSendgrid();
+    promiseTOGetsendgridCredentials.then(function (Credentials) {
+      sendgridCredentials[0] = Credentials[0];
+      sendgridCredentials[1] = Credentials[1];
+      res = Credentials[2];
+    }).catch(function (error) {
+      console.log("Error in Getting sendgridCredentials is", error.message);
+    });
+    var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+    let promiseTOReadResumeContent = getFile(filename, 'Shared%20Documents', 'Resumes');
+    promiseTOReadResumeContent.then(function (resumecontent) {
+      resumedetail = resumecontent;
+      sendgridCredentials[2] = resumedetail;
+      console.log("resumedetail is", resumedetail);
+      let linkedin_id = getPatternValue(sendgridCredentials[2], /https:\/\/www.linkedin.com\/[\w\d\/]+/gi);
+      console.log(" linkedin_id ",typeof linkedin_id, " ----- ",linkedin_id);
+      if(linkedin_id){
+        var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+        Linkedin.auth.authorize(res, scope);
+      }
+      else{
+        textsort(resumedetail, res);
+      }
+      
+    }).catch(function (error) {
+      console.log("Error in Getting resume content is", error.message);
+    });
+  // }
+  // else{
+  //   console.log("LinkedIn summary is ",req.query.summary)
+
+    // let promiseTOReadJDContent = getFile(jdfilename, 'Shared%20Documents', 'JD');
+    // promiseTOReadJDContent.then(function (JDcontent) {
+    //   JDdetail = JDcontent;
+    //   console.log("JDdetail is", JDdetail);
+    //   let promiseToGetResumekeyphrases = textanalyics(resumedetail,resumedetail,res);
+    //   promiseToGetResumekeyphrases.then(function (resumephrases) {
+    //     resumedetail = resumephrases[1];
+    //     res = resumephrases[2];
+    //     //console.log("response_2",res);
+    //     //console.log("resumephrase is", resumephrases[1]);
+    //     resumephrase = updatingphrases(resumephrases[0], 0);
+    //     console.log("Updated resumephrase is", resumephrase);
+    //     let promiseToGetJDkeyphrases = textanalyics(JDdetail,resumedetail,res);
+    //     promiseToGetJDkeyphrases.then(function (JDphrases) {
+    //       resumedetail = JDphrases[1];
+    //       res = JDphrases[2];
+    //       JDphrase = updatingphrases(JDphrases[0], 1);
+    //       console.log("Updated resumephrase is", JDphrase);
+
+    //       let promiseToGetJDintent  =  helper2(JDphrase,resumephrase,phrasecount,resumedetail,res);
+
+    //     }).catch(function (error) {
+    //       console.log("Error in Getting JD Keyphrases is", error.message);
+    //     });
+    //   }).catch(function (error) {
+    //     console.log("Error in Getting Resume Keyphrases is", error.message);
+    //   });
+    // }).catch(function (error) {
+    //   console.log("Error in Getting JD content is", error.message);
+    // });
+ // }
 });
 
-function getSendgrid(res) {
+function textsort(resumedetail, res){
+  var jdfilename = "Jdazure.docx";
+  let promiseTOReadJDContent = getFile(jdfilename, 'Shared%20Documents', 'JD');
+    promiseTOReadJDContent.then(function (JDcontent) {
+      JDdetail = JDcontent;
+      console.log("JDdetail is", JDdetail);
+      let promiseToGetResumekeyphrases = textanalyics(resumedetail,resumedetail,res);
+      promiseToGetResumekeyphrases.then(function (resumephrases) {
+        resumedetail = resumephrases[1];
+        res = resumephrases[2];
+        //console.log("response_2",res);
+        //console.log("resumephrase is", resumephrases[1]);
+        resumephrase = updatingphrases(resumephrases[0], 0);
+        console.log("Updated resumephrase is", resumephrase);
+        let promiseToGetJDkeyphrases = textanalyics(JDdetail,resumedetail,res);
+        promiseToGetJDkeyphrases.then(function (JDphrases) {
+          resumedetail = JDphrases[1];
+          res = JDphrases[2];
+          JDphrase = updatingphrases(JDphrases[0], 1);
+          console.log("Updated resumephrase is", JDphrase);
+
+          let promiseToGetJDintent  =  helper2(JDphrase,resumephrase,phrasecount,resumedetail,res);
+
+        }).catch(function (error) {
+          console.log("Error in Getting JD Keyphrases is", error.message);
+        });
+      }).catch(function (error) {
+        console.log("Error in Getting Resume Keyphrases is", error.message);
+      });
+    }).catch(function (error) {
+      console.log("Error in Getting JD content is", error.message);
+    });
+}
+function getSendgrid() {
   
   var config =
   {
@@ -118,7 +230,7 @@ function getSendgrid(res) {
         let tediousRequest = new Request(
           "SELECT  username,sendkey FROM dbo.userdetails",
           function (err, rowCount, rows) {
-            sendgridCredentials[2] = res;
+           // sendgridCredentials[2] = res;
             resolve(sendgridCredentials);
           }
         );
@@ -136,6 +248,73 @@ function getSendgrid(res) {
   });
 }
 
+function resolveAfter3Seconds() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      console.log("before");
+      resolve('resolved');
+      console.log("after");
+    }, 3000);
+  });
+}
+
+function resolveAfter1Seconds() {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      console.log("1-before");
+      resolve('resolved');
+      console.log("1-after");
+    }, 1000);
+  });
+}
+
+async function helper2(JDphrase,resumephrase,phrasecount,resumedetail,res)
+{
+  console.log("Inside helper2");
+let resumecontent="";
+
+ let JDintentarray=[],resumeintentarray=[]; 
+  for(let a=0;a<phrasecount;a++)
+  {
+    
+      JDintentarray[a] = await getIntents(JDphrase[a]);
+      console.log("JD");
+      if((a+1)%5==0)
+      {
+        await resolveAfter3Seconds();
+      }
+      await resolveAfter1Seconds();
+  
+    
+  }
+  console.log("after FIRST for loop",JDintentarray);
+  resumecontent = resumedetail;
+  let response = res;
+  for(let b=0;b<phrasecount;b++)
+  {
+  
+    resumeintentarray[b] =  await getIntents(resumephrase[b]);
+      console.log("REsume");
+      if((b+1)%5==0)
+      {
+        await resolveAfter3Seconds();
+      }
+      await resolveAfter1Seconds();
+   
+  }
+  console.log("after SECOND for loop",resumeintentarray);
+  let total = phraseCompariosion(JDintentarray,resumeintentarray);
+  if(total >= 5)
+  {
+    let email = getPatternValue(resumecontent,/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+    console.log("email",email,typeof email);
+    sendMail(email,response);
+  }
+  else{
+    console.log("Candidate score is "+total+" and rejected");
+    response.json({ message: 'You are rejected' });
+  }
+}
 
 function sendMail(emails,response)
 {
@@ -167,7 +346,7 @@ function sendMail(emails,response)
   let response2 =  juice(response1);
   console.log(" response2 = ",response2);
   sgMail.send({
-      to:'mprasanthmurugesan@gmail.com',
+      to:emails[0],
       from: 'mprasanthmurugesan@gmail.com',
     //   cc:"sendgriduser112@gmail.com",
       subject: 'Interview from Sirius Computer Solutions India Pvt Ltd ',
@@ -185,6 +364,297 @@ function sendMail(emails,response)
       response.json({ message: 'Selected and Mail sended' });
     }
   });
+}
+
+function phraseCompariosion(JDintentarray,resumeintentarray)
+{
+  var JDintentsuniquecounts = {};
+  var resumeintentsuniquecounts = {};
+  JDintentarray.forEach(function(x) { JDintentsuniquecounts[x] = (JDintentsuniquecounts[x] || 0)+1; });
+  resumeintentarray.forEach(function(x) { resumeintentsuniquecounts[x] = (resumeintentsuniquecounts[x] || 0)+1; });
+  let total=0;
+  for (key in JDintentsuniquecounts) {
+    if (JDintentsuniquecounts.hasOwnProperty(key)) 
+    {
+      if(resumeintentsuniquecounts.hasOwnProperty(key))
+      {
+        if(resumeintentsuniquecounts[key] <= JDintentsuniquecounts[key])
+        {
+          console.log("key "+key+" JDintentsuniquecounts "+JDintentsuniquecounts[key]+" resumeintentsuniquecounts "+resumeintentsuniquecounts[key]);
+          console.log("value "+(resumeintentsuniquecounts[key]/JDintentsuniquecounts[key])*JDintentsuniquecounts[key]);
+         // total +=(resumeintentsuniquecounts[key]/JDintentsuniquecounts[key])*JDintentsuniquecounts[key];
+         total += resumeintentsuniquecounts[key];
+          console.log("subtotal is",total);
+        }
+        else{
+          console.log("key "+key+" resumeintentsuniquecounts "+resumeintentsuniquecounts[key]+" is greater than  JDintentsuniquecounts "+JDintentsuniquecounts[key]);
+           total += JDintentsuniquecounts[key];
+           console.log("subtotal is",total);
+        }
+      }
+      else{
+        //total += 0;
+        console.log("key not found "+key);
+        console.log("subtotal is",total);
+      }
+    }
+  }
+console.log("total is",total);
+return total;
+}
+
+function getIntents(resumekeyphrase) {
+  console.log("Inside getIntents");
+   var luisserverurl = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/95eec808-1452-461b-b7d4-4a7a35ffaae1?subscription-key=c020b67f43b44573bb611d9ed30e2bd0&timezoneOffset=-360&q="+resumekeyphrase;
+   //var luisserverurl = "https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/af03578f-3913-4308-9cb4-535a5407b681?subscription-key=46da208aabf64fa4a0e531803b8f5bec&timezoneOffset=-360&q="+resumekeyphrase;
+  var options4 = {
+    method: 'get',
+    url:luisserverurl,
+  }
+
+  return new Promise(function (resolve, reject) {
+    request(options4, function (err, result, body) {
+      let resultfromluis = JSON.parse(body);
+      if (!("query" in resultfromluis)) {
+        console.log("Inside reject");
+        console.log("error is ", err);
+        console.log("-----------------------------------------------------------------");
+        reject(resumekeyphrase);
+      }
+      else {
+        let body_ = JSON.parse(body);
+        console.log("Inside resolve", body_);
+        console.log("-----------------------------------------------------------------");
+        let luisintent = body_.topScoringIntent.intent;
+        resolve(luisintent);
+      }
+    });
+  });      
+}
+
+function updatingphrases(phrase, flag) {
+  //console.log("phrase is",phrase);
+  var reqskills = ["AngularJs", "HTML5", "CSS3"];
+  reqskills.forEach(function (entry) {
+    if (phrase.indexOf(entry) != -1) {
+      let pos = phrase.indexOf(entry);
+      phrase.splice(pos, 1);
+      phrase.unshift(entry);
+    }
+  });
+  if (flag) {
+    if (phrase.indexOf("projects") != -1) {
+      let pos = phrase.indexOf("projects");
+      console.log("projects index", pos);
+      phrase.splice(pos, 1);
+    }
+  }
+  if (phrase.indexOf("Azure Blob") != -1) {
+    let pos = phrase.indexOf("Azure Blob");
+    console.log("Azure Blob index", pos);
+    phrase.splice(pos, 1);
+  }
+  return phrase;
+}
+
+function textanalyics(text,resumedetail,res) {
+  let body_;
+  console.log("inside textanalytics");
+  let documents = {
+    'documents': [
+      { "language": "en", 'id': '1', 'text': text },
+    ]
+  };
+  var options3 = {
+    method: 'post',
+    headers: {
+      'Ocp-Apim-Subscription-Key':'e208e04d79c74b84b4864c1b5382ed12', // this text-analytics api key is valid only for 7 days
+      // 'Content-Type':'application/json',
+      // 'Accept':'application/json',
+    },
+    body: JSON.stringify(documents),
+    // body: documents,
+    url: 'https://westcentralus.api.cognitive.microsoft.com/text/analytics/v2.0/keyPhrases',
+  }
+  return new Promise(function (resolve, reject) {
+    request(options3, function (err, result, body) {
+      if (err) {
+        console.log("error is ", err);
+        
+      }
+      else {
+        body_ = JSON.parse(body);
+        // let body__ = JSON.stringify (body_, null, '  ');
+        let keyphrases = body_.documents[0].keyPhrases;
+        let keyphrasesarray =[];
+        keyphrasesarray[0]= keyphrases;
+        keyphrasesarray[1]= resumedetail;
+        keyphrasesarray[2]= res;
+        // console.log ("output type is", typeof keyphrases,Object.keys(keyphrases).length);  
+        // console.log ("output is",body_.documents[0].keyPhrases[146]);  
+  
+        resolve(keyphrasesarray);
+      }
+    });
+  });
+
+}
+
+function getFile(filename, foldername, localfolder) {
+  var extname = path.extname(filename);
+  //console.log(extname);
+  var url2 = "https://siriuscomsharepoint.sharepoint.com/_api/web/GetFileByServerRelativeUrl('/" + foldername + "/" + filename + "')/$value";
+  var cs = encodeURIComponent("HfH/3FQfEmE7T5rZXYYezeEYbQ0JcB+zYm7+nJdYbRY=");
+  var inputs = "grant_type=client_credentials&client_id=9e03361f-4257-46fd-92e3-283725b73d2f@efd5e309-58b5-4b73-9884-fb4d0252aa8a&client_secret=" + cs + "&resource=00000003-0000-0ff1-ce00-000000000000/siriuscomsharepoint.sharepoint.com@efd5e309-58b5-4b73-9884-fb4d0252aa8a";
+  var token = "";
+
+  return new Promise(function (resolve, reject) {
+    if (extname == ".txt") { //this if for getting contents form text file using Sharepoint rest API
+      console.log("Its a txt file");
+      try {
+        var url1 = "https://accounts.accesscontrol.windows.net/efd5e309-58b5-4b73-9884-fb4d0252aa8a/tokens/OAuth/2";  // this url is to get authentication token
+        var options1 = {
+          method: 'post',
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          //body: JSON.stringify(inputdata),
+          body: inputs,
+          url: url1,
+        }
+        request(options1, function (err, result, body) {   // this request is to get authentication token
+          if (err) {
+            console.log("err", err);
+            reject(err);
+            // res.json({ message: 'Error occurred in Reading a file'+ err });
+          }
+          else {
+            body = JSON.parse(body);
+            token = body.access_token;
+            try {
+              var options2 = {
+                method: 'get',
+                url: url2,
+                headers: {
+                  'Authorization': 'Bearer ' + token,
+                },
+                //  encoding: null,
+              }
+              request(options2, function (err, result, body) {
+                if (err) {
+                  console.log("err", err);
+                  reject(err);
+                  // res.json({ message: 'Error occurred in Reading a file'+ err });
+                }
+                else {
+                  resolve(body);
+                  //  nlpParser(body,filename);
+                  //   res.json({ message: 'Files are downloaded' });
+
+                }
+
+              });
+            } catch (err) {
+              res.json({ message: 'Error occurred' + err });
+            }
+          }
+
+        });
+
+      } catch (err) {
+
+        res.json({ message: 'Error occurred' + err });
+      }
+    }
+    else { //this is for getting contents from non txt file by downloading it to the Resumes folder
+      try {
+        console.log("Its a DOCX file");
+        var context = {
+          siteUrl: "https://siriuscomsharepoint.sharepoint.com",
+          creds: {
+            username: "muthuprasanth@siriuscomsharepoint.onmicrosoft.com",
+            password: "Sirius@25"
+          }
+        };
+
+        var options = {
+          spRootFolder: foldername,
+          dlRootFolder: "./" + localfolder,
+          strictObjects: [
+            filename
+          ]
+        };
+        //console.log("dd",context,options);
+        sppull(context, options).then(function (downloadResults) {
+          console.log("Files are downloaded");
+          //  fs.readdir('./Resumes', function(err, items) {
+          //   for (var i=0; i<items.length; i++) {
+          //  console.log("path",items[i]);
+
+          fs.stat('./' + localfolder + '/' + filename, function (err, stat) {
+            if (err == null) {
+              console.log('File exists');
+              if (extname == ".pdf") {
+                var pdftext = "";
+                console.log("Its a pdf");
+                new PdfReader.PdfReader().parseFileItems('./' + localfolder + '/' + filename, function (err, item) {
+                  if (err) {
+                    console.log("err is", err);
+                    reject(err);
+                  }
+                  else if (!item) {
+                    //console.log("pdf content is ",pdftext);
+                    // textanalyics(pdftext);
+                    // console.log("else ssssss is",err);
+                    //console.log("pdf content is ",pdftext);
+                    resolve(pdftext);
+                  }
+                  else if (item.text) {
+                    pdftext += item.text;
+                    //console.log(item.text);
+                  }
+                });
+              }
+              else {
+                textract.fromFileWithPath('./' + localfolder + '/' + filename, function (error, text) {
+                  //  console.log("file data",text);
+                  var filePath = './' + localfolder + '/' + filename;
+                  console.log("filepath is", filePath);
+                  resolve(text);
+                  // nlpParser(text,filename);    
+                  //    fs.unlinkSync(filePath);          
+                })
+              }
+              // res.json({ message: 'Files are downloaded' });
+            } else if (err.code == 'ENOENT') {
+              // file does not exist
+              console.log('Some other error in elseif: ', err.code);
+              reject(err);
+            } else {
+              console.log('Some other error: ', err.code);
+              reject(err);
+            }
+          });
+
+        }).catch(function (err) {
+          console.log("Core error has happened", err);
+          // res.json({ message: 'Core error has happened' });
+          reject(err);
+        });
+
+      }//end of try
+      catch (err) {
+        console.log("Errrrrr", err);
+        reject(err);
+      }
+      console.log("111eeeee");
+    }
+    // });
+  });
+}
+function getPatternValue(text,pattern) {
+  return text.match(pattern);
+  //return text.match(/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
 }
 
 module.exports = router;

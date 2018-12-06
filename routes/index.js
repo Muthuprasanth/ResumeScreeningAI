@@ -17,128 +17,99 @@ var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'h
 var express = require('express');
 var router = express.Router();
 
-
 var phrasecount = 10;
 var sendgridCredentials = [];
 
 //Muthuprasanth1012
-
-/* GET home page. */
-
-router.get('/linkedin1', function(req, res) {
-  var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
-  Linkedin.auth.authorize(res, scope);
-});
-  
 router.get('/callback', function(req, res) {
-  Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
-    if ( err )
-      return console.error(err);
-      var linkedin = Linkedin.init(results.access_token || results.accessToken);
-      var summary = "";
-      linkedin.people.url("https://www.linkedin.com/in/mchawda",['summary', 'positions'],function(err, profileDetails) {
-        console.log("Summary of the LinkedIn Profile is ",profileDetails.summary)
-        console.log("Specialties of the LinkedIn Profile is ",profileDetails.specialties)
-        console.log("Positions of the LinkedIn Profile is ",profileDetails.positions)
-        summary = profileDetails.summary;
-
-        let promiseToGetlinkedinkeyphrases = textanalyics(summary,summary,res);
-        promiseToGetlinkedinkeyphrases.then(function (linkedinphrases) {
-          linkedindetail = linkedinphrases[1];
-          res = linkedinphrases[2];
-          //console.log("response_2",res);
-          //console.log("linkedinphrase is", linkedinphrases[1]);
-          linkedinphrase = updatingphrases(linkedinphrases[0], 0);
-          console.log("Updated linkedinphrase is", linkedinphrase);
-          res.json({ message: 'success'});
-        });
-      });
-    }); 
-});
-
-function getLinkedInDetails(){
-
-  var luisserverurl = "https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=81yooy0fgqgwnd&redirect_uri=http://localhost:3000/callback&state=2522abcde12345";
-  var options4 = {
-    method: 'get',
-    url:luisserverurl,
-  }
-
-  //return new Promise(function (resolve, reject) {
-    request(options4, function (err, result, body) {
-      if(err)
-      {
-        console.log("error ",err);
-        //reject(err);
-
-      }
-     //let resultfromluis = JSON.parse(body);
-      console.log("linkedin profile ",body);
-     // resolve(body);
+ // console.log(" res.resumedetail ",req);
+Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
+  if ( err )
+    return console.error(err);
+    var linkedin = Linkedin.init(results.access_token || results.accessToken);
+    var resumecontent = sendgridCredentials[2];
+     console.log(" resumecontent ",typeof resumecontent, resumecontent)
+      var resumesummary = "";
+      let linkedin_id = getPatternValue(resumecontent, /https:\/\/www.linkedin.com\/[\w\d\/]+/gi);
+      linkedin.people.url(linkedin_id,['summary', 'positions'],function(err, profileDetails) {
+      // console.log("Summary of the LinkedIn Profile is ",profileDetails.summary)
+      // console.log("Specialties of the LinkedIn Profile is ",profileDetails.specialties)
+      //console.log("Positions of the LinkedIn Profile is ",profileDetails.positions)
+      resumesummary = resumecontent+profileDetails.summary.trim();
+      console.log(" resumesummary is ",resumesummary);
+      textsort(resumesummary, res);
     });
-  //});
- 
-}
+  }); 
+});
 
 router.get('/tasks', function(req, res, next) {
   console.log("ResumeScreening AI")
-  
-  //var filename = req.query.filename;
-  var filename = "mahesh_1.docx";
-  //var filename = "ramprasad_1.docx";
-  var jdfilename = "Jdazure.docx";
-  var resumedetail = "", JDdetail = "";
-  console.log("inside main function phrasecount is ", phrasecount);
-  //getLinkedInDetails();
-  let promiseTOGetsendgridCredentials = getSendgrid(res);
-  promiseTOGetsendgridCredentials.then(function (Credentials) {
-    sendgridCredentials[0] = Credentials[0];
-    sendgridCredentials[1] = Credentials[1];
-    res = Credentials[2];
-    //console.log("sendgridCredentials is", sendgridCredentials);
+    //var filename = req.query.filename;
+    var filename = "mahesh_1.docx";
+    //var filename = "ramprasad_1.docx";
+    var resumedetail = "", JDdetail = "";
+    console.log("inside main function phrasecount is ", phrasecount);
+    let promiseTOGetsendgridCredentials = getSendgrid();
+    promiseTOGetsendgridCredentials.then(function (Credentials) {
+      sendgridCredentials[0] = Credentials[0];
+      sendgridCredentials[1] = Credentials[1];
+      res = Credentials[2];
+    }).catch(function (error) {
+      console.log("Error in Getting sendgridCredentials is", error.message);
+    });
+    var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
     let promiseTOReadResumeContent = getFile(filename, 'Shared%20Documents', 'Resumes');
     promiseTOReadResumeContent.then(function (resumecontent) {
       resumedetail = resumecontent;
+      sendgridCredentials[2] = resumedetail;
       console.log("resumedetail is", resumedetail);
-      let promiseTOReadJDContent = getFile(jdfilename, 'Shared%20Documents', 'JD');
-      promiseTOReadJDContent.then(function (JDcontent) {
-        JDdetail = JDcontent;
-        console.log("JDdetail is", JDdetail);
-        let promiseToGetResumekeyphrases = textanalyics(resumedetail,resumedetail,res);
-        promiseToGetResumekeyphrases.then(function (resumephrases) {
-          resumedetail = resumephrases[1];
-          res = resumephrases[2];
-          //console.log("response_2",res);
-          //console.log("resumephrase is", resumephrases[1]);
-          resumephrase = updatingphrases(resumephrases[0], 0);
-          console.log("Updated resumephrase is", resumephrase);
-          let promiseToGetJDkeyphrases = textanalyics(JDdetail,resumedetail,res);
-          promiseToGetJDkeyphrases.then(function (JDphrases) {
-            resumedetail = JDphrases[1];
-            res = JDphrases[2];
-            JDphrase = updatingphrases(JDphrases[0], 1);
-            console.log("Updated resumephrase is", JDphrase);
-
-            let promiseToGetJDintent  =  helper2(JDphrase,resumephrase,phrasecount,resumedetail,res);
-
-          }).catch(function (error) {
-            console.log("Error in Getting JD Keyphrases is", error.message);
-          });
-        }).catch(function (error) {
-          console.log("Error in Getting Resume Keyphrases is", error.message);
-        });
-      }).catch(function (error) {
-        console.log("Error in Getting JD content is", error.message);
-      });
+      let linkedin_id = getPatternValue(sendgridCredentials[2], /https:\/\/www.linkedin.com\/[\w\d\/]+/gi);
+      console.log(" linkedin_id ",typeof linkedin_id, " ----- ",linkedin_id);
+      if(linkedin_id){
+        var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+        Linkedin.auth.authorize(res, scope);
+      }
+      else
+        textsort(resumedetail, res);
     }).catch(function (error) {
       console.log("Error in Getting resume content is", error.message);
     });
-  }).catch(function (error) {
-    console.log("Error in Getting sendgridCredentials is", error.message);
-  });
 });
 
-function getSendgrid(res) {
+function textsort(resumedetail, res){
+  var jdfilename = "Jdazure.docx";
+  let promiseTOReadJDContent = getFile(jdfilename, 'Shared%20Documents', 'JD');
+    promiseTOReadJDContent.then(function (JDcontent) {
+      JDdetail = JDcontent;
+      console.log("JDdetail is", JDdetail);
+      let promiseToGetResumekeyphrases = textanalyics(resumedetail,resumedetail,res);
+      promiseToGetResumekeyphrases.then(function (resumephrases) {
+        resumedetail = resumephrases[1];
+        res = resumephrases[2];
+        //console.log("response_2",res);
+        //console.log("resumephrase is", resumephrases[1]);
+        resumephrase = updatingphrases(resumephrases[0], 0);
+        console.log("Updated resumephrase is", resumephrase);
+        let promiseToGetJDkeyphrases = textanalyics(JDdetail,resumedetail,res);
+        promiseToGetJDkeyphrases.then(function (JDphrases) {
+          resumedetail = JDphrases[1];
+          res = JDphrases[2];
+          JDphrase = updatingphrases(JDphrases[0], 1);
+          console.log("Updated resumephrase is", JDphrase);
+
+          let promiseToGetJDintent  =  helper2(JDphrase,resumephrase,phrasecount,resumedetail,res);
+
+        }).catch(function (error) {
+          console.log("Error in Getting JD Keyphrases is", error.message);
+        });
+      }).catch(function (error) {
+        console.log("Error in Getting Resume Keyphrases is", error.message);
+      });
+    }).catch(function (error) {
+      console.log("Error in Getting JD content is", error.message);
+    });
+}
+function getSendgrid() {
   
   var config =
   {
@@ -165,7 +136,7 @@ function getSendgrid(res) {
         let tediousRequest = new Request(
           "SELECT  username,sendkey FROM dbo.userdetails",
           function (err, rowCount, rows) {
-            sendgridCredentials[2] = res;
+           // sendgridCredentials[2] = res;
             resolve(sendgridCredentials);
           }
         );
@@ -241,9 +212,8 @@ let resumecontent="";
   let total = phraseCompariosion(JDintentarray,resumeintentarray);
   if(total >= 5)
   {
-    let email = getEmailsFromString(resumecontent,/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
-    let linkedin_id = getEmailsFromString(resumecontent,/https:\/\/www.linkedin.com\/[\w\d\/]+/gi);
-    console.log("email",email,typeof email," linkedin_id ",linkedin_id);
+    let email = getPatternValue(resumecontent,/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
+    console.log("email",email,typeof email);
     sendMail(email,response);
   }
   else{
@@ -282,7 +252,7 @@ function sendMail(emails,response)
   let response2 =  juice(response1);
   console.log(" response2 = ",response2);
   sgMail.send({
-      to:'mprasanthmurugesan@gmail.com',
+      to:emails[0],
       from: 'mprasanthmurugesan@gmail.com',
     //   cc:"sendgriduser112@gmail.com",
       subject: 'Interview from Sirius Computer Solutions India Pvt Ltd ',
@@ -588,7 +558,7 @@ function getFile(filename, foldername, localfolder) {
     // });
   });
 }
-function getEmailsFromString(text,pattern) {
+function getPatternValue(text,pattern) {
   return text.match(pattern);
   //return text.match(/([a-zA-Z0-9._+-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
 }
