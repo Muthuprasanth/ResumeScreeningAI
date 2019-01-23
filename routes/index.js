@@ -61,7 +61,7 @@ router.get('/linkedin', function(req, res) {
     console.log("inside test ");
     //var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
    // Linkedin.auth.authorize(res, scope);
-   res.header("Access-Control-Allow-Origin", "*");
+   //res.header("Access-Control-Allow-Origin", "*");
    Linkedin.auth.authorize(res);
  });
 
