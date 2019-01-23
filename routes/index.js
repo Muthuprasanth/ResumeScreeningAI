@@ -12,8 +12,8 @@ var url = require('url');
 var juice = require('juice');
 const sgMail = require('@sendgrid/mail');
 
-//var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'https://resumescreeningai.azurewebsites.net/callback');
-var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'http://localhost:3000/callback');//
+var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'https://resumescreener.azurewebsites.net/linkedin');
+//var Linkedin = require('node-linkedin')('81yooy0fgqgwnd', 'cuDmW9pn0HM3dwCN', 'http://localhost:3000/callback');//
 //var Linkedin = require('node-linkedin')('81wfo9abdlsl6r', 'vrc0zfNZ7GZSVMvV', 'http://localhost:3000/callback');
 var express = require('express');
 var router = express.Router();
@@ -40,20 +40,24 @@ var config =
   }
 }
 
-// router.get('/callback', function(req, res) {
-//  Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
-//    if ( err )
-//      return console.error(err);
-//      var linkedin_token = results.access_token || results.accessToken;     
-//      linkedin = Linkedin.init(linkedin_token);
-//      setTokeninDB(linkedin_token);
-//      processResumes();
-//    }); 
-//  });
+router.get('/linkedin', function(req, res) {
+  console.log("inside linkedin ");
+ Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
+   if ( err )
+     return console.error(err);
+     var linkedin_token = results.access_token || results.accessToken;     
+     linkedin = Linkedin.init(linkedin_token);
+    // setTokeninDB(linkedin_token);
+    // processResumes();
+   }); 
+ });
  
  router.get('/test', function(req, res) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.status(200).send("filelist");
+  //res.header("Access-Control-Allow-Origin", "*");
+  //res.status(200).send("filelist");
+    console.log("inside test ");
+    var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+    Linkedin.auth.authorize(res, scope);
  });
 
 // function setTokeninDB(accesstoken){
