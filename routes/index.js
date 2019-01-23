@@ -46,6 +46,7 @@ router.get('/linkedin', function(req, res) {
    if ( err )
      return console.error(err);
      var linkedin_token = results.access_token || results.accessToken;     
+     console.log("linkedin_token ",linkedin_token);
      linkedin = Linkedin.init(linkedin_token);
     // setTokeninDB(linkedin_token);
     // processResumes();
