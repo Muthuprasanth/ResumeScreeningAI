@@ -40,21 +40,22 @@ var config =
   }
 }
 
-router.get('/callback', function(req, res) {
- Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
-   if ( err )
-     return console.error(err);
-     var linkedin_token = results.access_token || results.accessToken;     
-     linkedin = Linkedin.init(linkedin_token);
-     setTokeninDB(linkedin_token);
-     processResumes();
-   }); 
- });
+// router.get('/callback', function(req, res) {
+//  Linkedin.auth.getAccessToken(res, req.query.code, req.query.state, function(err, results) {
+//    if ( err )
+//      return console.error(err);
+//      var linkedin_token = results.access_token || results.accessToken;     
+//      linkedin = Linkedin.init(linkedin_token);
+//      setTokeninDB(linkedin_token);
+//      processResumes();
+//    }); 
+//  });
  
  router.get('/test', function(req, res) {
   res.header("Access-Control-Allow-Origin", "*");
   res.status(200).send("filelist");
  });
+
 // function setTokeninDB(accesstoken){
 //   var connection = new Connection(config);
 //   var i = 0;
