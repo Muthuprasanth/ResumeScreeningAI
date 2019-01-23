@@ -59,8 +59,9 @@ router.get('/linkedin', function(req, res) {
   //res.header("Access-Control-Allow-Origin", "*");
   //res.status(200).send("filelist");
     console.log("inside test ");
-    var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
-    Linkedin.auth.authorize(res, scope);
+    //var scope = ['r_basicprofile','rw_company_admin','w_share','r_emailaddress'];
+   // Linkedin.auth.authorize(res, scope);
+   Linkedin.auth.authorize(res);
  });
 
 // function setTokeninDB(accesstoken){
