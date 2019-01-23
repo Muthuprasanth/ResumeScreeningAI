@@ -51,7 +51,7 @@ router.get('/callback', function(req, res) {
    }); 
  });
  
- router.get('/callback', function(req, res) {
+ router.get('/test', function(req, res) {
   res.header("Access-Control-Allow-Origin", "*");
   res.status(200).send("filelist");
  });
