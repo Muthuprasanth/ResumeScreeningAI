@@ -48,8 +48,6 @@ router.get('/linkedin', function(req, res) {
      var linkedin_token = results.access_token || results.accessToken;     
      console.log("linkedin_token ",linkedin_token);
      linkedin = Linkedin.init(linkedin_token);
-     res.header("Access-Control-Allow-Origin", "*");
-    res.status(200).send("filelist");
     // setTokeninDB(linkedin_token);
     // processResumes();
    }); 
